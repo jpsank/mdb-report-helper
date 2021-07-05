@@ -1,0 +1,21 @@
+{% extends "layout.html" %}
+{% block title %}Export{% endblock %}
+{% block head %}
+    {{ super() }}
+    <meta name="description" content="">
+{% endblock %}
+{% block content %}
+    <div>
+        <h2>Simple Export</h2>
+        <a href="{{ url_for('export') }}">Export all data as CSV</a>
+    </div>
+    <br/><br/><br/><br/>
+    <div>
+        <h2>Merge and Export</h2>
+        <p>Upload a file to merge data into it</p>
+        <form method="post" enctype="multipart/form-data">
+            <input type="file" name="file">
+            <input type="submit" value="Upload">
+        </form>
+    </div>
+{% endblock %}

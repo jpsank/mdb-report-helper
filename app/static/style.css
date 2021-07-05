@@ -1,0 +1,139 @@
+
+body {
+    font-family: Arial, "sans-serif";
+    font-size: medium;
+}
+
+
+a {
+    color: dodgerblue;
+    text-decoration: none;
+}
+
+
+nav ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: #333;
+}
+
+nav li {
+    float: left;
+    border-right:1px solid #bbb;
+}
+
+nav li:last-child {
+    border-right: none;
+}
+
+nav li a {
+    display: block;
+    color: white;
+    text-align: center;
+    padding: 14px 16px;
+    text-decoration: none;
+}
+
+nav li a:hover:not(.active) {
+    background-color: #111;
+}
+
+nav .active {
+    background-color: #04AA6D;
+}
+
+#content {
+    margin: 1vw 2vw;
+}
+
+form.search {
+    width: 100%;
+}
+form.search input {
+    width: 200px;
+}
+form.search input#search {
+    width: 100%;
+}
+form.search input[type=submit] {
+    width: 100px;
+}
+
+ul.filters {
+    list-style: none;
+}
+
+.flex {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.patents {
+    justify-content: center;
+}
+.patent {
+    padding: 10px;
+    width: 45%;
+}
+
+.patent .vote a {
+    padding: 10px;
+}
+
+.patent .vote a.relevant {
+    color: green;
+}
+.patent .vote a.irrelevant {
+    color: red;
+}
+.patent .vote a.relevant:hover {
+    background-color: lightgreen;
+}
+.patent .vote a.irrelevant:hover {
+    background-color: lightcoral;
+}
+.patent .vote a.relevant.active {
+    background-color: lightgreen;
+}
+.patent .vote a.irrelevant.active {
+    background-color: lightcoral;
+}
+.patent .vote a.inactive {
+    color: grey;
+}
+
+.patent .details {
+    margin-top: 20px;
+}
+
+.patent .details div {
+    margin: 1px;
+    padding: 2px;
+    background-color: azure;
+}
+
+ul.pager {
+    list-style: none;
+    text-align: center;
+}
+ul.pager li {
+    display: inline;
+    font-size: 2em;
+    font-family: sans-serif;
+}
+ul.pager li a {
+    color: black;
+    padding: 0 10vw 5vw 10vw;
+}
+ul.pager li.disabled a {
+    color: lightgrey;
+}
+ul.pager li.previous a {
+    float: left;
+}
+ul.pager li.next a {
+    float: right;
+}
+

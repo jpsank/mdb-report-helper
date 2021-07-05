@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+{% block title %}Admin{% endblock %}
+{% block head %}
+    {{ super() }}
+    <meta name="description" content="">
+{% endblock %}
+{% block content %}
+    <div>
+        <h2>Import Data</h2>
+        <form method="post" enctype="multipart/form-data">
+            <input type="file" name="file">
+            <input type="submit" value="Import">
+        </form>
+    </div>
+    <br/><br/><br/><br/>
+    <div>
+        <h2>Clear data</h2>
+        <p><a href="{{ url_for('reset_db') }}" style="color: red;">Reset database & clear all data</a></p>
+    </div>
+    <br/><br/><br/><br/>
+    <div>
+        <h2>Logout</h2>
+        <p><a href="{{ url_for('logout') }}">Logout</a></p>
+    </div>
+{% endblock %}

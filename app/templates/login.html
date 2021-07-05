@@ -1,0 +1,12 @@
+{% extends "layout.html" %}
+{% import 'bootstrap/wtf.html' as wtf %}
+
+{% block title %}Login{% endblock %}
+{% block head %}
+    {{ super() }}
+    <meta name="description" content="">
+{% endblock %}
+{% block content %}
+    <h2>Login</h2>
+    {{ wtf.quick_form(form) }}
+{% endblock %}

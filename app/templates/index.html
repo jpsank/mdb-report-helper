@@ -1,0 +1,79 @@
+{% extends "layout.html" %}
+{% block title %}Home{% endblock %}
+{% block head %}
+    {{ super() }}
+    <meta name="description" content="">
+{% endblock %}
+{% block content %}
+    <br/>
+    <form class="search" action="">
+        <label for="search">Search</label>
+        <input id="search" name="search" value="{{ search if search is not none else '' }}"/>
+
+        {% if filters %}
+            <ul class="filters">
+                {% for field, values in filters.items() %}
+                    <li>
+                        <label for="{{ field }}">{{ field }}</label>
+                        <input id="{{ field }}" name="{{ field }}" value="{{ '|'.join(values) }}"/>
+                        {% set kwargs = dict() %}
+                        {% do kwargs.update(filters) %}
+                        {% do kwargs.pop(field) %}
+                        <a href="{{ url_for('index', search=search, **kwargs) }}" style="color: red;">X</a>
+                    </li>
+                {% endfor %}
+            </ul>
+            <p><a href="{{ url_for('index', search=search) }}">Clear filters</a></p>
+            <input type="submit" value="Search">
+        {% endif %}
+    <br/><br/>
+    </form>
+    {% if patents %}
+        <p>{{ num_patents }} results.</p>
+        <div class="flex patents">
+            {% for patent in patents %}
+            <div class="patent">
+                <h2>{{ format_title(patent.title) }}</h2>
+                <p class="abstract">{{ patent.abstract }}</p>
+
+                {% if patent.google_patents_link is not none %}
+                <p><a href="{{ patent.google_patents_link }}" target="_blank">{{ patent.google_patents_link }}</a></p>
+                {% endif %}
+
+                {% if is_admin %}
+                <div class="vote">
+                    <a class="relevant {{ 'active' if patent.is_relevant() == 1 else 'inactive' }}" href="{{ url_for('vote', relevant='yes', pid=patent.id) }}">
+                        Relevant
+                    </a>
+                    <a class="irrelevant {{ 'active' if patent.is_relevant() == 0 else 'inactive' }}" href="{{ url_for('vote', relevant='no', pid=patent.id) }}">
+                        Not Relevant
+                    </a>
+                </div>
+                {% endif %}
+
+                <div class="flex details">
+                    {% for k in ['doc_nbr', 'family', 'pub_date', 'app_date', 'pub_country', 'pub_kind', 'pv_assignee',
+                                 'original_assignee', 'inpadoc_assignee', 'inventor', 'cpc_subgroup'] %}
+                        {% set kwargs = dict() %}
+                        {% do kwargs.update(filters) %}
+                        {% do kwargs.update({k: 'none' if patent[k] is none else patent[k]}) %}
+                        <div><a href="{{ url_for('index', search=search, **kwargs) }}">
+                            {{ k }}: {{ patent[k] }}
+                        </a></div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div><ul class="pager">
+            <li class="previous{% if not prev_url %} disabled{% endif %}">
+                <a href="{{ prev_url or '#' }}">&larr;</a>
+            </li>
+            <li class="next{% if not next_url %} disabled{% endif %}">
+                <a href="{{ next_url or '#' }}">&rarr;</a>
+            </li>
+        </ul></div>
+    {% else %}
+        <p>No results.</p>
+    {% endif %}
+{% endblock %}
