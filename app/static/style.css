@@ -74,8 +74,14 @@ ul.filters {
     justify-content: center;
 }
 .patent {
-    padding: 10px;
+    padding: 2vw;
     width: 45%;
+    overflow-wrap: break-word;
+}
+@media (max-width: 750px) {
+    .patent {
+        width: auto;
+    }
 }
 
 .patent .vote a {
