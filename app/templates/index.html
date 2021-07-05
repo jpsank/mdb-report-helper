@@ -29,50 +29,56 @@
     <br/><br/>
     </form>
     {% if patents %}
-        <p>{{ num_patents }} results.</p>
-        <div class="patents">
-            {% for patent in patents %}
-            <div class="patent">
-                <h2>{{ format_title(patent.title) }}</h2>
-                <p class="abstract">{{ patent.abstract }}</p>
-
-                {% if patent.google_patents_link is not none %}
-                <p><a href="{{ patent.google_patents_link }}" target="_blank">{{ patent.google_patents_link }}</a></p>
-                {% endif %}
-
-                {% if is_admin %}
-                <div class="vote">
-                    <a class="relevant {{ 'active' if patent.is_relevant() == 1 else 'inactive' }}" href="{{ url_for('vote', relevant='yes', pid=patent.id) }}">
-                        Relevant
-                    </a>
-                    <a class="irrelevant {{ 'active' if patent.is_relevant() == 0 else 'inactive' }}" href="{{ url_for('vote', relevant='no', pid=patent.id) }}">
-                        Not Relevant
-                    </a>
-                </div>
-                {% endif %}
-
-                <div class="flex details">
-                    {% for k in ['doc_nbr', 'family', 'pub_date', 'app_date', 'pub_country', 'pub_kind', 'pv_assignee',
-                                 'original_assignee', 'inpadoc_assignee', 'inventor', 'cpc_subgroup'] %}
-                        {% set kwargs = dict() %}
-                        {% do kwargs.update(filters) %}
-                        {% do kwargs.update({k: 'none' if patent[k] is none else patent[k]}) %}
-                        <div><a href="{{ url_for('index', search=search, **kwargs) }}">
-                            {{ k }}: {{ patent[k] }}
-                        </a></div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endfor %}
-        </div>
+        <div>{{ num_patents }} results.</div>
         <ul class="pager">
             <li class="previous{% if not prev_url %} disabled{% endif %}">
                 <a href="{{ prev_url or '#' }}">&larr;</a>
             </li>
+            <li class="{% if not next_url %}disabled{% endif %}">{{ request.args.get('page') or 1 }} of {{ pages }}</li>
             <li class="next{% if not next_url %} disabled{% endif %}">
                 <a href="{{ next_url or '#' }}">&rarr;</a>
             </li>
         </ul>
+        <div class="patents">
+            {% for patent in patents %}
+                <div class="patent">
+                    <h2>{{ format_title(patent.title) }}</h2>
+                    <p class="abstract">{{ patent.abstract }}</p>
+
+                    {% if patent.google_patents_link is not none %}
+                        <p><a href="{{ patent.google_patents_link }}" target="_blank">
+                            {{ patent.google_patents_link }}
+                        </a></p>
+                    {% endif %}
+
+                    {% if is_admin %}
+                        <div class="vote">
+                            <a class="relevant {{ 'active' if patent.is_relevant() == 1 else 'inactive' }}"
+                               href="{{ url_for('vote', relevant='yes', pid=patent.id) }}">
+                                Relevant
+                            </a>
+                            <a class="irrelevant {{ 'active' if patent.is_relevant() == 0 else 'inactive' }}"
+                               href="{{ url_for('vote', relevant='no', pid=patent.id) }}">
+                                Not Relevant
+                            </a>
+                        </div>
+                    {% endif %}
+
+                    <div class="flex details">
+                        {% for k in ['doc_nbr', 'family', 'pub_date', 'app_date', 'pub_country', 'pub_kind',
+                                     'pv_assignee', 'original_assignee', 'inpadoc_assignee', 'inventor',
+                                     'cpc_subgroup'] %}
+                            {% set kwargs = dict() %}
+                            {% do kwargs.update(filters) %}
+                            {% do kwargs.update({k: 'none' if patent[k] is none else patent[k]}) %}
+                            <div><a href="{{ url_for('index', search=search, **kwargs) }}">
+                                {{ k }}: {{ patent[k] }}
+                            </a></div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
     {% else %}
         <p>No results.</p>
     {% endif %}

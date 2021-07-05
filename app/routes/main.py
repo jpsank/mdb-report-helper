@@ -57,7 +57,7 @@ def index():
     patents, next_url, prev_url = paginate(patents, per_page=50)
 
     return render_template_w_admin('index.html', patents=patents.items, next_url=next_url, prev_url=prev_url,
-                                   num_patents=patents.total, search=search, filters=filters)
+                                   pages=patents.pages, num_patents=patents.total, search=search, filters=filters)
 
 
 @app.route('/exports', methods=["GET", "POST"])
