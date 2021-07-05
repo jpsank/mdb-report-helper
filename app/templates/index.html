@@ -30,7 +30,7 @@
     </form>
     {% if patents %}
         <p>{{ num_patents }} results.</p>
-        <div class="flex patents">
+        <div class="patents">
             {% for patent in patents %}
             <div class="patent">
                 <h2>{{ format_title(patent.title) }}</h2>
@@ -65,14 +65,14 @@
             </div>
             {% endfor %}
         </div>
-        <div><ul class="pager">
+        <ul class="pager">
             <li class="previous{% if not prev_url %} disabled{% endif %}">
                 <a href="{{ prev_url or '#' }}">&larr;</a>
             </li>
             <li class="next{% if not next_url %} disabled{% endif %}">
                 <a href="{{ next_url or '#' }}">&rarr;</a>
             </li>
-        </ul></div>
+        </ul>
     {% else %}
         <p>No results.</p>
     {% endif %}
