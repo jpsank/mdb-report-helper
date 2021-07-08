@@ -1,4 +1,5 @@
-from flask import session, render_template, request, url_for
+from flask import session, render_template, request, url_for, flash, redirect
+from functools import wraps
 
 
 def allowed_file(filename, extensions):
@@ -10,6 +11,16 @@ def redirect_url(default='index'):
     return request.args.get('next') or \
            request.referrer or \
            url_for(default)
+
+
+def admin_required(fn):
+    @wraps(fn)
+    def decorated_view(*args, **kwargs):
+        if not is_admin():
+            flash('You must log in to access this page.')
+            return redirect(url_for('login'))
+        return fn(*args, **kwargs)
+    return decorated_view
 
 
 def is_admin():

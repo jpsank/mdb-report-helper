@@ -1,3 +1,4 @@
+import re
 import os
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -12,4 +13,6 @@ SESSION_TYPE = 'sqlalchemy'
 
 
 UPLOAD_FOLDER = os.path.join(basedir, 'app/static/uploads')
+
+
 

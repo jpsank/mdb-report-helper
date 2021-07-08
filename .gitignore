@@ -7,3 +7,5 @@ saved/
 data/
 *.sqlite
 unused.txt
+
+app/static/uploads/*

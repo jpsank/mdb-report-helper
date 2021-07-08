@@ -2,7 +2,6 @@ import pandas as pd
 from flask import flash, redirect, url_for, request, \
     send_from_directory, current_app
 from werkzeug.utils import secure_filename
-from functools import wraps
 
 import os
 from app import app, db
@@ -10,17 +9,8 @@ from app.models import Patent
 from app.populate import populate
 from app.forms import AdminPassForm
 
-from .util import is_admin, login_admin, logout_admin, render_template_w_admin, redirect_url, allowed_file
-
-
-def admin_required(fn):
-    @wraps(fn)
-    def decorated_view(*args, **kwargs):
-        if not is_admin():
-            flash('You must log in to access this page.')
-            return redirect(url_for('login'))
-        return fn(*args, **kwargs)
-    return decorated_view
+from .util import is_admin, login_admin, logout_admin, render_template_w_admin, redirect_url, allowed_file,\
+    admin_required
 
 
 @app.route('/vote/<relevant>/<pid>', methods=["GET"])

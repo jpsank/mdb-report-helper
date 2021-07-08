@@ -11,7 +11,6 @@ TRANSLATE = {
     'App Date': 'app_date',
     'Pub Country': 'pub_country',
     'Pub Kind': 'pub_kind',
-    'Assignee': 'pv_assignee',
     'PV Assignee': 'pv_assignee',
     'Original Assignee': 'original_assignee',
     'INPADOC Assignee': 'inpadoc_assignee',
@@ -28,11 +27,16 @@ TRANSLATE = {
     'Title': 'title',
     'Abstract': 'abstract',
     'Google Patents Link': 'google_patents_link',
+
+    'Assignee': 'final_assignee',
+    'Final Assignee': 'final_assignee',
+    'Type': 'type',
     'Relevant? (yes/no)': 'relevant',
     'Notes': 'notes',
 
     # Delete unused data
     'Unnamed: 22': None,
+    'Unnamed: 24': None,
     'First pub year': None,
     '#': None,
     'count': None,

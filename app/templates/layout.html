@@ -11,8 +11,9 @@
     <nav>
         <ul>
             <li><a href="{{ url_for('index') }}">MDB Report Helper</a></li>
-            <li><a href="{{ url_for('admin') }}">Admin</a></li>
-            <li style="float:right"><a href="{{ url_for('exports') }}">Export</a></li>
+            <li><a href="{{ url_for('cleansing') }}">Cleansing</a></li>
+            <li><a href="{{ url_for('exports') }}">Export</a></li>
+            <li style="float:right"><a href="{{ url_for('admin') }}">Admin</a></li>
         </ul>
     </nav>
     <div id="content">{% block content %}{% endblock %}</div>

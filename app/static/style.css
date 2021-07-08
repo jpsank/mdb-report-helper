@@ -122,8 +122,8 @@ ul.filters {
 }
 
 .patent .details div {
-    margin: 1px;
-    padding: 2px;
+    margin: 1px 3px;
+    padding: 1px 4px;
     background-color: azure;
 }
 
@@ -148,3 +148,64 @@ ul.pager li.disabled {
     color: lightgrey;
 }
 
+
+table {
+    /*border: 1px solid black;*/
+    border-collapse: collapse;
+}
+th {
+    background-color: #eee;
+}
+
+
+table.assignees {
+    min-width: 600px;
+    table-layout: fixed;
+    font-size: .9em;
+}
+table.assignees tr:nth-child(odd) {
+    background-color: whitesmoke;
+}
+table.assignees tr.first {
+    border-top: 3px solid lightgrey;
+}
+table.assignees td.family {
+    background-color: white;
+}
+table.assignees th {
+    width: 20.75%;
+}
+table.assignees th:first-child {
+    width: 6%;
+}
+table.assignees th:last-child {
+    width: 11%;
+}
+/*table.assignees th.long {*/
+/*    width: 27%;*/
+/*}*/
+table.assignees td input {
+    width: 90%;
+    min-width: 100px;
+}
+table.assignees td input.disabled {
+    display: none;
+}
+
+div.cleansing-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 5px;
+    border-bottom: 1px solid black;
+}
+div.cleansing-controls form {
+    flex: 0;
+}
+div.cleansing-controls a {
+    padding: 10px 20px;
+    flex: 1;
+}
+div.cleansing-controls .right {
+    text-align: right;
+}

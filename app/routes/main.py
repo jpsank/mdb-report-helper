@@ -1,15 +1,16 @@
 import re
-
+from itertools import groupby
+from operator import attrgetter
 import pandas as pd
 from flask import flash, redirect, url_for, request, make_response, current_app
 from werkzeug.utils import secure_filename
-from sqlalchemy import or_
+from sqlalchemy import or_, and_
 
 import os
 from app import app, db
 from app.models import Patent
 
-from .util import render_template_w_admin, allowed_file, redirect_url
+from .util import render_template_w_admin, allowed_file, redirect_url, admin_required
 
 
 def paginate(items, per_page):
@@ -31,7 +32,7 @@ def index():
 
     fields = ['doc_nbr', 'family', 'pub_date', 'app_date', 'pub_country', 'pub_kind', 'pv_assignee',
               'original_assignee', 'inpadoc_assignee', 'inventor', 'cpc_subgroup', 'title', 'abstract',
-              'google_patents_link', 'relevant', 'notes']
+              'google_patents_link', 'final_assignee', 'type', 'relevant', 'notes']
     filters = {}
     for field in fields:
         if values := request.args.getlist(field):
@@ -48,7 +49,7 @@ def index():
                     condition = or_(condition, getattr(Patent, field).like(f'%{search}%'))
             patents = patents.filter(condition)
         elif field == 'relevant':
-            patents = patents.filter(Patent.relevant.__eq__(None))
+            patents = patents.filter(Patent.is_not_marked)
 
     if (search := request.args.get('search')) and search != '':
         condition = or_(getattr(Patent, field).like(f'%{search}%') for field in fields)
@@ -56,8 +57,108 @@ def index():
 
     patents, next_url, prev_url = paginate(patents, per_page=50)
 
-    return render_template_w_admin('index.html', patents=patents.items, next_url=next_url, prev_url=prev_url,
-                                   pages=patents.pages, num_patents=patents.total, search=search, filters=filters)
+    return render_template_w_admin('index.html', patents=patents.items, pages=patents.pages, num_patents=patents.total,
+                                   next_url=next_url, prev_url=prev_url, search=search, filters=filters)
+
+
+@app.route('/cleansing', methods=["GET"])
+def cleansing():
+    combos = db.session.query(Patent.family, Patent.pv_assignee, Patent.original_assignee, Patent.inpadoc_assignee,
+                              Patent.final_assignee, Patent.type). \
+        filter(Patent.is_marked_relevant). \
+        group_by(Patent.pv_assignee, Patent.original_assignee, Patent.inpadoc_assignee). \
+        order_by(Patent.family)
+
+    combos, next_url, prev_url = paginate(combos, per_page=50)
+
+    families_combos = {k: list(g) for k, g in groupby(combos.items, attrgetter('family'))}
+
+    return render_template_w_admin("cleansing.html", families_combos=families_combos,
+                                   pages=combos.pages, next_url=next_url, prev_url=prev_url)
+
+
+@app.route('/cleansing/auto', methods=["GET"])
+@admin_required
+def cleansing_auto():
+    patents = db.session.query(Patent).filter(Patent.is_marked_relevant)
+
+    for p in patents:
+        if p.final_assignee is None:
+            for assignee in (p.pv_assignee, p.inpadoc_assignee, p.original_assignee):
+                if assignee and assignee.lower() != "unknown":
+                    p.final_assignee = assignee
+                    break
+        if p.final_assignee is not None and p.type is None:
+            if re.search(r"Company|Corporation|( (Ltd|LLC|Inc|Corp|S\.?A)\.?$)", p.final_assignee, re.IGNORECASE):
+                p.type = "Company"
+            elif re.search(r"University|College", p.final_assignee, re.IGNORECASE):
+                p.type = "University"
+            elif re.search(r"Agency|National|Bureau|Federal|Ministry", p.final_assignee, re.IGNORECASE):
+                p.type = "Federal Agency"
+        db.session.merge(p)
+    db.session.commit()
+
+    return redirect(redirect_url())
+
+
+@app.route('/cleansing/clear', methods=["GET"])
+@admin_required
+def cleansing_clear():
+    patents = db.session.query(Patent).filter(Patent.is_marked_relevant)
+
+    for p in patents:
+        p.final_assignee = None
+        p.type = None
+        db.session.merge(p)
+    db.session.commit()
+
+    return redirect(redirect_url())
+
+
+@app.route('/cleansing', methods=["POST"])
+@admin_required
+def cleansing_post():
+    families = request.form.getlist('family[]')
+    final_assignees = request.form.getlist('final_assignee[]')
+    types = request.form.getlist('type[]')
+
+    # Process only the families with any non-empty input fields
+    form_data = {families[i]: (final_assignees[i], types[i]) for i in range(len(families))
+                 if final_assignees[i] or types[i]}
+
+    # Select combinations of pv_assignee, original_assignee, and inpadoc_assignee from patents that
+    # are in the family and marked relevant (as shown in the /cleansing page), as long as the
+    # combination is not none, none, none
+    combos = db.session.query(Patent.family, Patent.pv_assignee,
+                              Patent.original_assignee, Patent.inpadoc_assignee).filter(
+        Patent.is_marked_relevant,
+        Patent.family.in_(form_data.keys()),
+        ~and_(Patent.pv_assignee == None, Patent.original_assignee == None, Patent.inpadoc_assignee == None)
+    ).group_by(
+        Patent.pv_assignee, Patent.original_assignee, Patent.inpadoc_assignee
+    ).all()
+
+    # Map all combinations to their correct family
+    combo_to_family = {tuple(combo): family for (family, *combo) in combos}
+
+    # Match patents in the family as well as patents with the same pv_assignee, original_assignee,
+    # and inpadoc_assignee combo as any patent in the family
+    matches_any_combo = or_(
+        and_(Patent.pv_assignee == x, Patent.original_assignee == y, Patent.inpadoc_assignee == z)
+        for _, x, y, z in combos
+    )
+    patents = db.session.query(Patent).filter(or_(Patent.family.in_(form_data.keys()), matches_any_combo))
+
+    for p in patents:
+        if (family := p.family) not in form_data:
+            family = combo_to_family[(p.pv_assignee, p.original_assignee, p.inpadoc_assignee)]
+        final_assignee, type_ = form_data[family]
+        p.final_assignee = final_assignee if final_assignee else None
+        p.type = type_ if type_ else None
+        db.session.merge(p)
+    db.session.commit()
+
+    return redirect(redirect_url())
 
 
 @app.route('/exports', methods=["GET", "POST"])
@@ -81,41 +182,62 @@ def exports():
 
 
 def merge_and_export(path):
-    df = pd.read_csv(path)
+    # Columns to merge
+    columns_to_merge = {
+        "doc_nbr": (
+            "Docnumber",
+            re.compile(r"(doc\.?|document|patent|priority)\s?(number|nbr\.?|no\.?)", re.IGNORECASE)
+        ),
+        "relevant": (
+            "Relevant? (yes/no)",
+            re.compile(r"(relevant)\??\s?(\(yes/no\))?", re.IGNORECASE)
+        ),
+        "final_assignee": (
+            "Final Assignee",
+            re.compile("final assignee", re.IGNORECASE)
+        ),
+        "type": (
+            "Type",
+            re.compile("type", re.IGNORECASE)
+        )
+    }
 
+    # Import dataframe
+    df1 = pd.read_csv(path)
+
+    # Build translation table for column headers
+    translate = {}
+    for from_, (to_, regex) in columns_to_merge.items():
+        translate[from_] = to_
+        if to_ not in df1.columns:
+            for col in df1.columns:
+                if regex.fullmatch(col):
+                    translate[from_] = col
+                    break
+
+        # Add column if unable to find it
+        if (to_ := translate[from_]) not in df1.columns:
+            df1[to_] = ""
+
+    # Must be able to translate index column
+    if "doc_nbr" not in translate:
+        flash("Invalid format of uploaded file, must have column for patent number")
+        return redirect(redirect_url())
+
+    # Export db to dataframe and translate columns
     patents = Patent.query.all()
     data = [p.serialize() for p in patents]
     df2 = pd.DataFrame(data)
+    df2 = df2[translate.keys()]
+    df2 = df2.rename(columns=translate)
 
-    doc_nbr_h = "Docnumber"
-    relevant_h = "Relevant? (yes/no)"
+    # Update using index
+    df1 = df1.set_index(translate["doc_nbr"])
+    df2 = df2.set_index(translate["doc_nbr"])
+    df1.update(df2)
 
-    def find_column(regex):
-        for col in df.columns:
-            if regex.fullmatch(col):
-                return col
-        return None
-
-    if doc_nbr_h not in df.columns:
-        pattern = re.compile(r"(doc|document|patent|priority)\s?(number|nbr|no)", re.IGNORECASE)
-        doc_nbr_h = find_column(pattern)
-
-    if relevant_h not in df.columns:
-        pattern = re.compile(r"(relevant)\??\s?(\(yes/no\))?", re.IGNORECASE)
-        relevant_h = find_column(pattern)
-
-    if doc_nbr_h is None or relevant_h is None:
-        flash("Invalid format of uploaded file")
-        return redirect(redirect_url())
-
-    df2 = df2[["doc_nbr", "relevant"]]
-    df2 = df2.rename(columns={"doc_nbr": doc_nbr_h, "relevant": relevant_h})
-
-    df = df.set_index(doc_nbr_h)
-    df2 = df2.set_index(doc_nbr_h)
-
-    df.update(df2)
-    resp = make_response(df.to_csv())
+    # Make response
+    resp = make_response(df1.to_csv())
     resp.headers["Content-Disposition"] = "attachment; filename=export.csv"
     resp.headers["Content-Type"] = "text/csv"
     return resp
@@ -123,8 +245,10 @@ def merge_and_export(path):
 
 @app.route('/export', methods=["GET"])
 def export():
-    patents = Patent.query.all()
-    data = [p.serialize() for p in patents]
+    patents = Patent.query
+    if request.args.get('relevant') is not None:
+        patents = patents.filter(Patent.is_marked_relevant)
+    data = [p.serialize_formal() for p in patents.all()]
     df = pd.DataFrame(data)
     resp = make_response(df.to_csv())
     resp.headers["Content-Disposition"] = "attachment; filename=export.csv"

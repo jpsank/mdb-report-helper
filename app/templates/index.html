@@ -53,11 +53,11 @@
 
                     {% if is_admin %}
                         <div class="vote">
-                            <a class="relevant {{ 'active' if patent.is_relevant() == 1 else 'inactive' }}"
+                            <a class="relevant {{ 'active' if patent.is_marked_relevant else 'inactive' }}"
                                href="{{ url_for('vote', relevant='yes', pid=patent.id) }}">
                                 Relevant
                             </a>
-                            <a class="irrelevant {{ 'active' if patent.is_relevant() == 0 else 'inactive' }}"
+                            <a class="irrelevant {{ 'active' if patent.is_marked_irrelevant else 'inactive' }}"
                                href="{{ url_for('vote', relevant='no', pid=patent.id) }}">
                                 Not Relevant
                             </a>
@@ -65,14 +65,14 @@
                     {% endif %}
 
                     <div class="flex details">
-                        {% for k in ['doc_nbr', 'family', 'pub_date', 'app_date', 'pub_country', 'pub_kind',
-                                     'pv_assignee', 'original_assignee', 'inpadoc_assignee', 'inventor',
-                                     'cpc_subgroup'] %}
+                        {% for field in ['doc_nbr', 'family', 'pub_date', 'app_date', 'pub_country', 'pub_kind',
+                                         'pv_assignee', 'original_assignee', 'inpadoc_assignee', 'inventor',
+                                         'cpc_subgroup', 'final_assignee', 'type', 'relevant', 'notes'] %}
                             {% set kwargs = dict() %}
                             {% do kwargs.update(filters) %}
-                            {% do kwargs.update({k: 'none' if patent[k] is none else patent[k]}) %}
+                            {% do kwargs.update({field: 'none' if patent[field] is none else patent[field]}) %}
                             <div><a href="{{ url_for('index', search=search, **kwargs) }}">
-                                {{ k }}: {{ patent[k] }}
+                                {{ field }}: {{ 'none' if patent[field] is none else patent[field]|truncate(50, True) }}
                             </a></div>
                         {% endfor %}
                     </div>

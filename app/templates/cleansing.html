@@ -1,0 +1,102 @@
+{% extends "layout.html" %}
+{% block title %}Assignee Cleansing{% endblock %}
+{% block head %}
+    {{ super() }}
+    <meta name="description" content="">
+{% endblock %}
+{% block content %}
+    <h2>Assignee Cleansing</h2>
+    {% if families_combos %}
+        <div class="cleansing-controls">
+            <a class="right" href="{{ url_for('cleansing_auto') }}">Auto-populate</a>
+            <form action="" method="post" id="rename">
+                <input type="submit" value="Submit all changes" />
+            </form>
+            <a class="right" href="{{ url_for('cleansing_clear') }}" style="color: red;">Clear all</a>
+        </div>
+        <ul class="pager">
+            <li class="previous{% if not prev_url %} disabled{% endif %}">
+                <a href="{{ prev_url or '#' }}">&larr;</a>
+            </li>
+            <li class="{% if not next_url %}disabled{% endif %}">{{ request.args.get('page') or 1 }} of {{ pages }}</li>
+            <li class="next{% if not next_url %} disabled{% endif %}">
+                <a href="{{ next_url or '#' }}">&rarr;</a>
+            </li>
+        </ul>
+        <table class="assignees">
+            <tr>
+                <th>Family</th>
+                <th>PatentVest</th>
+                <th>Original</th>
+                <th>INPADOC</th>
+                <th>Final Assignee</th>
+                <th>Type</th>
+            </tr>
+            {% for _, combos in families_combos.items() %}
+                {% set outer_loop = loop %}
+                {% for family, pv_assignee, original_assignee, inpadoc_assignee, final_assignee, type in combos %}
+                    <tr class="{% if loop.index == 1 %}first{% endif %}">
+                        {% if loop.index == 1 %}
+                            <td rowspan="{{ combos|length }}" class="family">
+                                <a target="_blank" href="{{ url_for('index', relevant='yes', family=family) }}">{{ family }}</a>
+                            </td>
+                        {% endif %}
+                        <td>{{ pv_assignee }}</td>
+                        <td>{{ original_assignee }}</td>
+                        <td>{{ inpadoc_assignee }}</td>
+                        <td>
+                            {% if loop.index < combos|length %}
+                                {{ final_assignee or '' }}
+                            {% else %}
+                                {% if final_assignee is not none %}
+                                    <div>
+                                        {{ final_assignee }}
+                                        <a style="cursor: pointer;"
+                                           onclick="
+                                                   this.parentElement.style.display = 'none';
+                                                   document.getElementById('final_assignee{{ outer_loop.index }}').classList.remove('disabled');
+                                                   ">
+                                            Edit
+                                        </a>
+                                    </div>
+                                {% endif %}
+                                <input class="family"
+                                       name="family[]" id="family{{ outer_loop.index }}"
+                                       hidden value="{{ family }}"
+                                       form="rename"/>
+                                <input class='final_assignee{% if final_assignee is not none %} disabled{% endif %}'
+                                       name='final_assignee[]' id='final_assignee{{ outer_loop.index }}'
+                                       value="{{ final_assignee or '' }}"
+                                       form="rename" />
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if loop.index < combos|length %}
+                                {{ type or '' }}
+                            {% else %}
+                                {% if type is not none %}
+                                    <div>
+                                        {{ type }}
+                                        <a style="cursor: pointer;"
+                                           onclick="
+                                                   this.parentElement.style.display = 'none';
+                                                   document.getElementById('type{{ outer_loop.index }}').classList.remove('disabled');
+                                                   ">
+                                            Edit
+                                        </a>
+                                    </div>
+                                {% endif %}
+                                <input class='type{% if type is not none %} disabled{% endif %}'
+                                       name='type[]' id='type{{ outer_loop.index }}'
+                                       value="{{ type or '' }}"
+                                       form="rename" />
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            {% endfor %}
+        </table>
+    {% else %}
+        <p>No results.</p>
+    {% endif %}
+{% endblock %}
