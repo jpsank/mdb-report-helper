@@ -9,6 +9,7 @@ from sqlalchemy import or_, and_
 import os
 from app import app, db
 from app.models import Patent
+from config import DB_TO_EXCEL, DB_TO_EXCEL_RE
 
 from .util import render_template_w_admin, allowed_file, redirect_url, admin_required
 
@@ -182,47 +183,26 @@ def exports():
 
 
 def merge_and_export(path):
-    # Columns to merge
-    columns_to_merge = {
-        "doc_nbr": (
-            "Docnumber",
-            re.compile(r"(doc\.?|document|patent|priority)\s?(number|nbr\.?|no\.?)", re.IGNORECASE)
-        ),
-        "relevant": (
-            "Relevant? (yes/no)",
-            re.compile(r"(relevant)\??\s?(\(yes/no\))?", re.IGNORECASE)
-        ),
-        "final_assignee": (
-            "Final Assignee",
-            re.compile("final assignee", re.IGNORECASE)
-        ),
-        "type": (
-            "Type",
-            re.compile("type", re.IGNORECASE)
-        )
-    }
-
-    # Import dataframe
-    df1 = pd.read_csv(path)
+    # Import dataframe, actually a CSV
+    excel_df = pd.read_csv(path)
 
     # Build translation table for column headers
     translate = {}
-    for from_, (to_, regex) in columns_to_merge.items():
-        translate[from_] = to_
-        if to_ not in df1.columns:
-            for col in df1.columns:
+    for db_col in ["doc_nbr", "relevant", "final_assignee", "type"]:
+        excel_col = DB_TO_EXCEL[db_col]
+        if excel_col in excel_df.columns:
+            translate[db_col] = excel_col
+        else:
+            regex = DB_TO_EXCEL_RE[db_col]
+            for col in excel_df.columns:
                 if regex.fullmatch(col):
-                    translate[from_] = col
+                    translate[db_col] = col
                     break
 
-        # Add column if unable to find it
-        if (to_ := translate[from_]) not in df1.columns:
-            df1[to_] = ""
-
-    # Must be able to translate index column
-    if "doc_nbr" not in translate:
-        flash("Invalid format of uploaded file, must have column for patent number")
-        return redirect(redirect_url())
+        # Add column if not found
+        if db_col not in translate:
+            excel_df[excel_col] = ""
+            translate[db_col] = excel_col
 
     # Export db to dataframe and translate columns
     patents = Patent.query.all()
@@ -232,12 +212,12 @@ def merge_and_export(path):
     df2 = df2.rename(columns=translate)
 
     # Update using index
-    df1 = df1.set_index(translate["doc_nbr"])
+    excel_df = excel_df.set_index(translate["doc_nbr"])
     df2 = df2.set_index(translate["doc_nbr"])
-    df1.update(df2)
+    excel_df.update(df2)
 
     # Make response
-    resp = make_response(df1.to_csv())
+    resp = make_response(excel_df.to_csv())
     resp.headers["Content-Disposition"] = "attachment; filename=export.csv"
     resp.headers["Content-Type"] = "text/csv"
     return resp
@@ -246,9 +226,10 @@ def merge_and_export(path):
 @app.route('/export', methods=["GET"])
 def export():
     patents = Patent.query
-    if request.args.get('relevant') is not None:
+    if 'relevant' in request.args:
         patents = patents.filter(Patent.is_marked_relevant)
-    data = [p.serialize_formal() for p in patents.all()]
+    columns = request.args.getlist("columns")
+    data = [p.serialize_excel(columns) for p in patents.all()]
     df = pd.DataFrame(data)
     resp = make_response(df.to_csv())
     resp.headers["Content-Disposition"] = "attachment; filename=export.csv"

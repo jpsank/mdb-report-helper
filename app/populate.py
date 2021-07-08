@@ -2,58 +2,18 @@ import pandas as pd
 
 from app.models import Patent
 from app import db
-
-
-TRANSLATE = {
-    'Docnumber': 'doc_nbr',
-    'Family': 'family',
-    'Pub Date': 'pub_date',
-    'App Date': 'app_date',
-    'Pub Country': 'pub_country',
-    'Pub Kind': 'pub_kind',
-    'PV Assignee': 'pv_assignee',
-    'Original Assignee': 'original_assignee',
-    'INPADOC Assignee': 'inpadoc_assignee',
-    'Inventor': 'inventor',
-
-    # CPC info redundant
-    'CPC Section': None,
-    'CPC Main Class': None,
-    'CPC Sub Class': None,
-    'CPC Main Group': None,
-    'CPC Sub Group': 'cpc_subgroup',
-
-    ' Title': 'title',
-    'Title': 'title',
-    'Abstract': 'abstract',
-    'Google Patents Link': 'google_patents_link',
-
-    'Assignee': 'final_assignee',
-    'Final Assignee': 'final_assignee',
-    'Type': 'type',
-    'Relevant? (yes/no)': 'relevant',
-    'Notes': 'notes',
-
-    # Delete unused data
-    'Unnamed: 22': None,
-    'Unnamed: 24': None,
-    'First pub year': None,
-    '#': None,
-    'count': None,
-}
-
-# DATA_PATH = os.path.join(current_dir, '..', 'data/Yale University.xlsx - Raw data.csv')
+from config import EXCEL_TO_DB, DB_COLUMNS
 
 
 def populate(data_path):
-    patent_df = pd.read_csv(data_path)
-    patent_df = patent_df.rename(columns=TRANSLATE)
-    patent_df = patent_df.drop(columns=[None])
+    patents_df = pd.read_csv(data_path)
+    patents_df = patents_df.rename(columns=EXCEL_TO_DB)
+    patents_df = patents_df.drop(columns=[c for c in patents_df.columns if c not in DB_COLUMNS])
 
-    # print(patent_df.columns)
-    # print(patent_df)
+    # print(patents_df.columns)
+    # print(patents_df)
 
-    for (index, series) in patent_df.iterrows():
+    for (index, series) in patents_df.iterrows():
         patent = Patent(**series)
         db.session.merge(patent)
 

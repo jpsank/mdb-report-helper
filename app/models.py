@@ -1,6 +1,8 @@
 from app import db
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy import func, or_, and_, not_, select
+from sqlalchemy import func, or_, and_
+
+from config import DB_COLUMNS, DB_TO_EXCEL
 
 
 class Patent(db.Model):
@@ -75,43 +77,12 @@ class Patent(db.Model):
             return -1
         return 1 if self.relevant.lower() == "yes" else 0 if self.relevant.lower() == "no" else -1
 
-    def serialize(self):
-        return {'doc_nbr': self.doc_nbr,
-                'family': self.family,
-                'pub_date': self.pub_date,
-                'app_date': self.app_date,
-                'pub_country': self.pub_country,
-                'pub_kind': self.pub_kind,
-                'pv_assignee': self.pv_assignee,
-                'original_assignee': self.original_assignee,
-                'inpadoc_assignee': self.inpadoc_assignee,
-                'inventor': self.inventor,
-                'cpc_subgroup': self.cpc_subgroup,
-                'title': self.title,
-                'abstract': self.abstract,
-                'google_patents_link': self.google_patents_link,
-                'notes': self.notes,
-                'final_assignee': self.final_assignee,
-                'type': self.type,
-                'relevant': self.relevant}
+    def serialize(self, columns=()):
+        if columns:
+            return {col: getattr(self, col) for col in columns if col in DB_COLUMNS}
+        return {col: getattr(self, col) for col in DB_COLUMNS}
 
-    def serialize_formal(self):
-        return {'Docnumber': self.doc_nbr,
-                'Family': self.family,
-                'Pub Date': self.pub_date,
-                'App Date': self.app_date,
-                'Pub Country': self.pub_country,
-                'Pub Kind': self.pub_kind,
-                'PV Assignee': self.pv_assignee,
-                'Original Assignee': self.original_assignee,
-                'INPADOC Assignee': self.inpadoc_assignee,
-                'Inventor': self.inventor,
-                'CPC Sub Group': self.cpc_subgroup,
-                'Title': self.title,
-                'Abstract': self.abstract,
-                'Google Patents Link': self.google_patents_link,
-                'Notes': self.notes,
-                'Final Assignee': self.final_assignee,
-                'Type': self.type,
-                'Relevant? (yes/no)': self.relevant}
-
+    def serialize_excel(self, columns=()):
+        if columns:
+            return {DB_TO_EXCEL[col]: getattr(self, col) for col in columns if col in DB_COLUMNS}
+        return {excel_col: getattr(self, db_col) for db_col, excel_col in DB_TO_EXCEL.items()}
