@@ -90,11 +90,13 @@ def cleansing_auto():
                     p.final_assignee = assignee
                     break
         if p.final_assignee is not None and p.type is None:
-            if re.search(r"Company|Corporation|( (Ltd|LLC|Inc|Corp|S\.?A)\.?$)", p.final_assignee, re.IGNORECASE):
+            bef, aft = r"(^|\s)", r"(\s|,|$)"  # To match as a word rather than possibly part of an unrelated word
+            if re.search(rf"{bef}(Company|Corporation|((Limited|Ltd|L\.?L\.?C|Inc|Corp|S\.?A)\.?)){aft}",
+                         p.final_assignee, re.IGNORECASE):
                 p.type = "Company"
-            elif re.search(r"University|College", p.final_assignee, re.IGNORECASE):
+            elif re.search(rf"{bef}University|College{aft}", p.final_assignee, re.IGNORECASE):
                 p.type = "University"
-            elif re.search(r"Agency|National|Bureau|Federal|Ministry", p.final_assignee, re.IGNORECASE):
+            elif re.search(rf"{bef}Agency|National|Bureau|Federal|Ministry{aft}", p.final_assignee, re.IGNORECASE):
                 p.type = "Federal Agency"
         db.session.merge(p)
     db.session.commit()
