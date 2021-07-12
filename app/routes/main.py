@@ -9,7 +9,7 @@ from sqlalchemy import or_, and_
 import os
 from app import app, db
 from app.models import Patent
-from config import DB_TO_EXCEL, DB_TO_EXCEL_RE
+from config import DB_TO_EXCEL, DB_TO_EXCEL_RE, DB_COLUMNS
 
 from .util import render_template_w_admin, allowed_file, redirect_url, admin_required
 
@@ -31,11 +31,8 @@ def paginate(items, per_page):
 def index():
     patents = db.session.query(Patent)
 
-    fields = ['doc_nbr', 'family', 'pub_date', 'app_date', 'pub_country', 'pub_kind', 'pv_assignee',
-              'original_assignee', 'inpadoc_assignee', 'inventor', 'cpc_subgroup', 'title', 'abstract',
-              'google_patents_link', 'final_assignee', 'type', 'relevant', 'notes']
     filters = {}
-    for field in fields:
+    for field in DB_COLUMNS:
         if values := request.args.getlist(field):
             searches = []
             for value in values:

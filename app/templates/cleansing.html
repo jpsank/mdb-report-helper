@@ -8,7 +8,11 @@
     <h2>Assignee Cleansing</h2>
     {% if families_combos %}
         <div class="cleansing-controls">
-            <a class="right" href="{{ url_for('cleansing_auto') }}">Auto-populate</a>
+            {% if is_admin %}
+                <a class="right" href="{{ url_for('cleansing_auto') }}">Auto-populate</a>
+            {% else %}
+                <a></a>
+            {% endif %}
             <form action="" method="post" id="rename">
                 <input type="submit" value="Submit all changes" />
             </form>
