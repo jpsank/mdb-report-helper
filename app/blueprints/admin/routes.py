@@ -73,7 +73,7 @@ def admin():
             file.save(path)
             populate(path)
             return redirect(redirect_url())
-    return render_template("admin/admin.html")
+    return render_template("admin/admin.html", is_admin=is_admin())
 
 
 @bp.route('/login', methods=['GET', 'POST'])

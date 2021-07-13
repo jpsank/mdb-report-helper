@@ -35,8 +35,8 @@ def logout_admin():
     session.pop('is_admin')
 
 
-def render_template_w_admin(*args, **kwargs):
-    return render_template(*args, **kwargs, is_admin=is_admin())
+# def render_template_w_admin(*args, **kwargs):
+#     return render_template(*args, **kwargs, is_admin=is_admin())
 
 
 def is_valid_name(text):
