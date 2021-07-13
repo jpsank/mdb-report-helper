@@ -19,11 +19,11 @@
                         {% set kwargs = dict() %}
                         {% do kwargs.update(filters) %}
                         {% do kwargs.pop(field) %}
-                        <a href="{{ url_for('index', search=search, **kwargs) }}" style="color: red;">X</a>
+                        <a href="{{ url_for('main.index', search=search, **kwargs) }}" style="color: red;">X</a>
                     </li>
                 {% endfor %}
             </ul>
-            <p><a href="{{ url_for('index', search=search) }}">Clear filters</a></p>
+            <p><a href="{{ url_for('main.index', search=search) }}">Clear filters</a></p>
             <input type="submit" value="Search">
         {% endif %}
     <br/><br/>
@@ -51,14 +51,14 @@
                         </a></p>
                     {% endif %}
 
-                    {% if is_admin %}
+                    {% if current_user.is_authenticated %}
                         <div class="vote">
                             <a class="relevant {{ 'active' if patent.is_marked_relevant else 'inactive' }}"
-                               href="{{ url_for('vote', relevant='yes', pid=patent.id) }}">
+                               href="{{ url_for('admin.vote', relevant='yes', pid=patent.id) }}">
                                 Relevant
                             </a>
                             <a class="irrelevant {{ 'active' if patent.is_marked_irrelevant else 'inactive' }}"
-                               href="{{ url_for('vote', relevant='no', pid=patent.id) }}">
+                               href="{{ url_for('admin.vote', relevant='no', pid=patent.id) }}">
                                 Not Relevant
                             </a>
                         </div>
@@ -71,7 +71,7 @@
                             {% set kwargs = dict() %}
                             {% do kwargs.update(filters) %}
                             {% do kwargs.update({field: 'none' if patent[field] is none else patent[field]}) %}
-                            <div><a href="{{ url_for('index', search=search, **kwargs) }}">
+                            <div><a href="{{ url_for('main.index', search=search, **kwargs) }}">
                                 {{ field }}: {{ 'none' if patent[field] is none else patent[field]|truncate(50, True) }}
                             </a></div>
                         {% endfor %}

@@ -18,7 +18,7 @@ def admin_required(fn):
     def decorated_view(*args, **kwargs):
         if not is_admin():
             flash('You must log in to access this page.')
-            return redirect(url_for('login'))
+            return redirect(url_for('admin.login'))
         return fn(*args, **kwargs)
     return decorated_view
 
@@ -37,3 +37,13 @@ def logout_admin():
 
 def render_template_w_admin(*args, **kwargs):
     return render_template(*args, **kwargs, is_admin=is_admin())
+
+
+def is_valid_name(text):
+    """ Checks if name is valid (only ASCII printable characters, no slashes) """
+    return all(32 <= ord(ch) <= 126 and ch != '/' for ch in text)
+
+
+def nl2br(text):
+    return text.replace('\n', '<br>')
+

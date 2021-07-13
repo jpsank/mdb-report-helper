@@ -2,16 +2,18 @@ import re
 from itertools import groupby
 from operator import attrgetter
 import pandas as pd
-from flask import flash, redirect, url_for, request, make_response, current_app
+from flask import flash, redirect, url_for, request, make_response, current_app, render_template
 from werkzeug.utils import secure_filename
 from sqlalchemy import or_, and_
+from flask_login import login_required, current_user
 
 import os
-from app import app, db
+from app import db
+from app.blueprints.main import bp
 from app.models import Patent
 from config import DB_TO_EXCEL, DB_TO_EXCEL_RE, DB_COLUMNS
 
-from .util import render_template_w_admin, allowed_file, redirect_url, admin_required
+from app.util.helpers import allowed_file, redirect_url
 
 
 def paginate(items, per_page):
@@ -27,9 +29,10 @@ def paginate(items, per_page):
     return items, next_url, prev_url
 
 
-@app.route('/', methods=["GET"])
+@bp.route('/', methods=["GET"])
+@login_required
 def index():
-    patents = db.session.query(Patent)
+    patents = Patent.query_by_current_user()
 
     filters = {}
     for field in DB_COLUMNS:
@@ -50,20 +53,21 @@ def index():
             patents = patents.filter(Patent.is_not_marked)
 
     if (search := request.args.get('search')) and search != '':
-        condition = or_(getattr(Patent, field).like(f'%{search}%') for field in fields)
+        condition = or_(getattr(Patent, field).like(f'%{search}%') for field in DB_COLUMNS)
         patents = patents.filter(condition)
 
     patents, next_url, prev_url = paginate(patents, per_page=50)
 
-    return render_template_w_admin('index.html', patents=patents.items, pages=patents.pages, num_patents=patents.total,
-                                   next_url=next_url, prev_url=prev_url, search=search, filters=filters)
+    return render_template('main/index.html', patents=patents.items, pages=patents.pages, num_patents=patents.total,
+                           next_url=next_url, prev_url=prev_url, search=search, filters=filters)
 
 
-@app.route('/cleansing', methods=["GET"])
+@bp.route('/cleansing', methods=["GET"])
+@login_required
 def cleansing():
     combos = db.session.query(Patent.family, Patent.pv_assignee, Patent.original_assignee, Patent.inpadoc_assignee,
                               Patent.final_assignee, Patent.type). \
-        filter(Patent.is_marked_relevant). \
+        filter(Patent.user_id == current_user.id, Patent.is_marked_relevant). \
         group_by(Patent.pv_assignee, Patent.original_assignee, Patent.inpadoc_assignee). \
         order_by(Patent.family)
 
@@ -71,14 +75,14 @@ def cleansing():
 
     families_combos = {k: list(g) for k, g in groupby(combos.items, attrgetter('family'))}
 
-    return render_template_w_admin("cleansing.html", families_combos=families_combos,
-                                   pages=combos.pages, next_url=next_url, prev_url=prev_url)
+    return render_template("main/cleansing.html", families_combos=families_combos,
+                           pages=combos.pages, next_url=next_url, prev_url=prev_url)
 
 
-@app.route('/cleansing/auto', methods=["GET"])
-@admin_required
+@bp.route('/cleansing/auto', methods=["GET"])
+@login_required
 def cleansing_auto():
-    patents = db.session.query(Patent).filter(Patent.is_marked_relevant)
+    patents = Patent.query_by_current_user().filter(Patent.is_marked_relevant)
 
     for p in patents:
         if p.final_assignee is None:
@@ -101,10 +105,10 @@ def cleansing_auto():
     return redirect(redirect_url())
 
 
-@app.route('/cleansing/clear', methods=["GET"])
-@admin_required
+@bp.route('/cleansing/clear', methods=["GET"])
+@login_required
 def cleansing_clear():
-    patents = db.session.query(Patent).filter(Patent.is_marked_relevant)
+    patents = Patent.query_by_current_user().filter(Patent.is_marked_relevant)
 
     for p in patents:
         p.final_assignee = None
@@ -115,8 +119,8 @@ def cleansing_clear():
     return redirect(redirect_url())
 
 
-@app.route('/cleansing', methods=["POST"])
-@admin_required
+@bp.route('/cleansing', methods=["POST"])
+@login_required
 def cleansing_post():
     families = request.form.getlist('family[]')
     final_assignees = request.form.getlist('final_assignee[]')
@@ -131,6 +135,7 @@ def cleansing_post():
     # combination is not none, none, none
     combos = db.session.query(Patent.family, Patent.pv_assignee,
                               Patent.original_assignee, Patent.inpadoc_assignee).filter(
+        Patent.user_id == current_user.id,
         Patent.is_marked_relevant,
         Patent.family.in_(form_data.keys()),
         ~and_(Patent.pv_assignee == None, Patent.original_assignee == None, Patent.inpadoc_assignee == None)
@@ -147,7 +152,9 @@ def cleansing_post():
         and_(Patent.pv_assignee == x, Patent.original_assignee == y, Patent.inpadoc_assignee == z)
         for _, x, y, z in combos
     )
-    patents = db.session.query(Patent).filter(or_(Patent.family.in_(form_data.keys()), matches_any_combo))
+    patents = Patent.query_by_current_user().filter(
+        or_(Patent.family.in_(form_data.keys()), matches_any_combo)
+    )
 
     for p in patents:
         if (family := p.family) not in form_data:
@@ -161,7 +168,8 @@ def cleansing_post():
     return redirect(redirect_url())
 
 
-@app.route('/exports', methods=["GET", "POST"])
+@bp.route('/exports', methods=["GET", "POST"])
+@login_required
 def exports():
     if request.method == "POST":
         if 'file' not in request.files:
@@ -178,7 +186,7 @@ def exports():
             file.save(path)
 
             return merge_and_export(path)
-    return render_template_w_admin("exports.html")
+    return render_template("main/exports.html")
 
 
 def merge_and_export(path):
@@ -204,7 +212,7 @@ def merge_and_export(path):
             translate[db_col] = excel_col
 
     # Export db to dataframe and translate columns
-    patents = Patent.query.all()
+    patents = Patent.query_by_current_user().all()
     data = [p.serialize() for p in patents]
     df2 = pd.DataFrame(data)
     df2 = df2[translate.keys()]
@@ -222,9 +230,10 @@ def merge_and_export(path):
     return resp
 
 
-@app.route('/export', methods=["GET"])
+@bp.route('/export', methods=["GET"])
+@login_required
 def export():
-    patents = Patent.query
+    patents = Patent.query_by_current_user()
     if 'relevant' in request.args:
         patents = patents.filter(Patent.is_marked_relevant)
     columns = request.args.getlist("columns")

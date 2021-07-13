@@ -8,15 +8,15 @@
     <h2>Assignee Cleansing</h2>
     {% if families_combos %}
         <div class="cleansing-controls">
-            {% if is_admin %}
-                <a class="right" href="{{ url_for('cleansing_auto') }}">Auto-populate</a>
+            {% if not current_user.is_anonymous %}
+                <a class="right" href="{{ url_for('main.cleansing_auto') }}">Auto-populate</a>
             {% else %}
                 <a></a>
             {% endif %}
             <form action="" method="post" id="rename">
                 <input type="submit" value="Submit all changes" />
             </form>
-            <a class="right" href="{{ url_for('cleansing_clear') }}" style="color: red;">Clear all</a>
+            <a class="right" href="{{ url_for('main.cleansing_clear') }}" style="color: red;">Clear all</a>
         </div>
         <ul class="pager">
             <li class="previous{% if not prev_url %} disabled{% endif %}">
@@ -42,7 +42,7 @@
                     <tr class="{% if loop.index == 1 %}first{% endif %}">
                         {% if loop.index == 1 %}
                             <td rowspan="{{ combos|length }}" class="family">
-                                <a target="_blank" href="{{ url_for('index', relevant='yes', family=family) }}">{{ family }}</a>
+                                <a target="_blank" href="{{ url_for('main.index', relevant='yes', family=family) }}">{{ family }}</a>
                             </td>
                         {% endif %}
                         <td>{{ pv_assignee }}</td>

@@ -1,8 +1,33 @@
-from app import db
+from app import db, login
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy import func, or_, and_
+from flask_login import UserMixin, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
 
 from config import DB_COLUMNS, DB_TO_EXCEL
+
+
+@login.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+
+class User(db.Model, UserMixin):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(64), index=True, unique=True)
+    password_hash = db.Column(db.String(128))
+
+    patents = db.relationship('Patent', backref='user', lazy='dynamic')
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+    @staticmethod
+    def get_by_username(username):
+        return User.query.filter(func.lower(User.username) == func.lower(username)).first()
 
 
 class Patent(db.Model):
@@ -35,6 +60,8 @@ class Patent(db.Model):
     final_assignee = db.Column(db.String, nullable=True)
     type = db.Column(db.String, nullable=True)  # University, Company, Federal Agency, Independent Inventor
     relevant = db.Column(db.String, nullable=True)  # Yes, no, None
+
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
 
     @hybrid_property
     def is_marked_relevant(self):
@@ -75,11 +102,17 @@ class Patent(db.Model):
             ~func.lower(Patent.relevant).in_(("yes", "no"))
         )
 
-    def relevant_status(self):
-        """ Return 1 if relevant, 0 if not relevant, and -1 if unknown """
-        if self.relevant is None:
-            return -1
-        return 1 if self.relevant.lower() == "yes" else 0 if self.relevant.lower() == "no" else -1
+    # def relevant_status(self):
+    #     """ Return 1 if relevant, 0 if not relevant, and -1 if unknown """
+    #     if self.relevant is None:
+    #         return -1
+    #     return 1 if self.relevant.lower() == "yes" else 0 if self.relevant.lower() == "no" else -1
+
+    @staticmethod
+    def query_by_current_user():
+        return Patent.query.filter(Patent.user_id == current_user.id)
+
+    # Serialize
 
     def serialize(self, columns=()):
         if columns:

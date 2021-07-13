@@ -1,17 +1,14 @@
 import click
-
-from app import app, db
+import os
 
 
 def register(cli):
     @cli.command()
     def init():
         print("Initializing database...")
-        db.create_all()
-
-    @cli.command()
-    def populate():
-        from app import populate
+        os.system("flask db init")
+        os.system("flask db migrate")
+        os.system("flask db upgrade")
 
 
 if __name__ == '__main__':

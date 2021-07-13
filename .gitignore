@@ -7,5 +7,6 @@ saved/
 data/
 *.sqlite
 unused.txt
+migrations/*
 
 app/static/uploads/*

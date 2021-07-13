@@ -2,16 +2,6 @@ import re
 import os
 basedir = os.path.abspath(os.path.dirname(__file__))
 
-DEBUG = False
-
-# Flask-SQLAlchemy
-SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'data.sqlite')
-SQLALCHEMY_TRACK_MODIFICATIONS = False
-
-# Flask-Session
-SESSION_TYPE = 'sqlalchemy'
-
-
 UPLOAD_FOLDER = os.path.join(basedir, 'app/static/uploads')
 
 
@@ -40,7 +30,7 @@ DB_TO_EXCEL_RE = {
 EXCEL_TO_DB = {k: v for k, v in zip(EXCEL_COLUMNS, DB_COLUMNS)}
 EXCEL_TO_DB.update({
     " Title": "title",
-    "Assignee": "final_assignee",
+    "Assignee": "pv_assignee",
 })
 
 

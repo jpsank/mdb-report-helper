@@ -10,13 +10,21 @@
 <body>
     <nav>
         <ul>
-            <li><a href="{{ url_for('index') }}">MDB Report Helper</a></li>
-            <li><a href="{{ url_for('cleansing') }}">Cleansing</a></li>
-            <li><a href="{{ url_for('exports') }}">Export</a></li>
-            <li style="float:right"><a href="{{ url_for('admin') }}">Admin</a></li>
+            <li><a href="{{ url_for('main.index') }}">MDB Report Helper</a></li>
+            <li><a href="{{ url_for('main.cleansing') }}">Cleansing</a></li>
+            <li><a href="{{ url_for('main.exports') }}">Export</a></li>
+            {% if current_user.is_anonymous %}
+                <li style="float:right"><a href="{{ url_for('auth.login') }}">Login</a></li>
+            {% else %}
+                <li style="float:right">
+                    <a href="{{ url_for('admin.admin') }}">Account: {{ current_user.username }}</a>
+                </li>
+            {% endif %}
         </ul>
     </nav>
-    <div id="content">{% block content %}{% endblock %}</div>
+    <div id="content">
+        {% block content %}{% endblock %}
+    </div>
     <div id="footer">
         <p>The source code for this project is available on
             <a href="https://github.com/puffyboa/mdb-report-helper">Github</a></p>

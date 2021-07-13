@@ -13,6 +13,9 @@ wtforms = "*"
 flask-wtf = "*"
 flask-bootstrap = "*"
 flask-session = "*"
+flask-login = "*"
+sentry-sdk = "*"
+flask-migrate = "*"
 
 [dev-packages]
 
